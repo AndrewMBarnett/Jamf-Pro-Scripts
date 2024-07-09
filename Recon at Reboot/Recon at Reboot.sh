@@ -16,6 +16,9 @@
 # Version 1.0.1, 12-Aug-2022, Dan K. Snelson (@dan-snelson)
 #   Added check for Jamf Pro server connection
 #
+# Version 1.1, 09-July-2024, Andrew Barnett (@andrewmbarnett)
+#   Added recon at the end and reboot
+#
 ####################################################################################################
 
 
@@ -26,9 +29,9 @@
 #
 ####################################################################################################
 
-scriptVersion="1.0.1"
-plistDomain="org.churchofjesuschrist"       # Hard-coded domain name
-plistLabel="reconAtReboot"                  # Unique label for this plist
+scriptVersion="1.1"
+plistDomain="com.organization"       # Hard-coded domain name
+plistLabel="symStart"                  # Unique label for this plist
 plistLabel="$plistDomain.$plistLabel"       # Prepend domain to label
 timestamp=$( /bin/date '+%Y-%m-%d-%H%M%S' ) # Used in log file
 
@@ -44,7 +47,7 @@ timestamp=$( /bin/date '+%Y-%m-%d-%H%M%S' ) # Used in log file
 # Logging preamble
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-echo "Recon at Reboot (${scriptVersion})"
+echo "Setup Your Mac - at Reboot (${scriptVersion})"
 
 
 
@@ -63,7 +66,7 @@ echo "Create the LaunchDaemon ..."
         <key>ProgramArguments</key>
         <array>
             <string>/bin/sh</string>
-            <string>/private/var/tmp/reconAtReboot.bash</string>
+            <string>/private/var/tmp/symAtReboot.bash</string>
         </array>
         <key>RunAtLoad</key>
         <true/>
@@ -90,13 +93,13 @@ echo "Set LaunchDaemon file permissions ..."
 
 echo "Create the script ..."
 
-cat << '==endOfScript==' > /private/var/tmp/reconAtReboot.bash
+cat << '==endOfScript==' > /private/var/tmp/symAtReboot.bash
 #!/bin/bash
 ####################################################################################################
 #
 # ABOUT
 #
-#    Recon at Reboot
+#    Setup Your Mac - at Reboot
 #
 ####################################################################################################
 #
@@ -108,6 +111,9 @@ cat << '==endOfScript==' > /private/var/tmp/reconAtReboot.bash
 # Version 1.0.1, 12-Aug-2022, Dan K. Snelson (@dan-snelson)
 #   Added check for Jamf Pro server connection
 #
+# Version 1.1, 09-July-2024, Andrew Barnett (@andrewmbarnett)
+#   Added recon at the end and reboot
+#
 ####################################################################################################
 
 
@@ -118,9 +124,9 @@ cat << '==endOfScript==' > /private/var/tmp/reconAtReboot.bash
 #
 ####################################################################################################
 
-scriptVersion="1.0.1"
-plistDomain="org.churchofjesuschrist"       # Hard-coded domain name
-plistLabel="reconAtReboot"                  # Unique label for this plist
+scriptVersion="1.1"
+plistDomain="com.organization"       # Hard-coded domain name
+plistLabel="symStart"                  # Unique label for this plist
 plistLabel="$plistDomain.$plistLabel"       # Prepend domain to label
 timestamp=$( /bin/date '+%Y-%m-%d-%H%M%S' ) # Used in log file
 scriptResult=""
@@ -195,18 +201,18 @@ done
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# If Jamf Pro server is available, update inventory
+# If Jamf Pro server is available, Run SYM Policy
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 if [[ "${jssAvailable}" == "yes" ]]; then
 
     echo "Jamf Pro server is available, proceeding; " >> /private/var/tmp/$plistLabel.log
 
-    scriptResult+="Resuming Recon at Reboot; "
+    scriptResult+="Resuming Setup Your Mac at Reboot; "
 
-    scriptResult+="Updating inventory; "
+    scriptResult+="Running Setup Your Mac; "
 
-    /usr/local/bin/jamf recon
+    /usr/local/bin/jamf policy -event symStart
 
 else
 
@@ -230,7 +236,7 @@ scriptResult+="Delete $plistLabel.plist; "
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 scriptResult+="Delete script; "
-/bin/rm -fv /private/var/tmp/reconAtReboot.bash
+/bin/rm -fv /private/var/tmp/symAtReboot.bash
 
 
 
@@ -252,9 +258,9 @@ exit 0
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 echo "Set script file permissions ..."
-/usr/sbin/chown root:wheel /private/var/tmp/reconAtReboot.bash
-/bin/chmod 644 /private/var/tmp/reconAtReboot.bash
-/bin/chmod +x /private/var/tmp/reconAtReboot.bash
+/usr/sbin/chown root:wheel /private/var/tmp/symAtReboot.bash
+/bin/chmod 644 /private/var/tmp/symAtReboot.bash
+/bin/chmod +x /private/var/tmp/symAtReboot.bash
 
 
 
@@ -273,5 +279,11 @@ echo "Created $plistLabel.log on $timestamp" > /private/var/tmp/$plistLabel.log
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 echo "LaunchDaemon and Script created."
+
+/usr/local/bin/jamf recon
+
+echo "Submitting Inventory, then rebooting"
+
+sleep 5 && shutdown -r now
 
 exit 0
